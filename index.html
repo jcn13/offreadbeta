@@ -1,0 +1,71 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+    <title>Offline Reader</title>
+    <link rel="shortcut icon" href="images/favicon.ico?v2" type="image/x-icon" />
+    <link rel="stylesheet" href="main.css">
+</head>
+<body>
+    <nav class="nav">
+        <div class="home-btn">Home</div>
+        <div class="about-btn">About</div>
+    </nav>
+    <section class="loader">
+        <div id="load"></div>
+    </section>
+    <div id="mobile-nav">
+        <div class="nav-toggle">
+            <span></span>
+        </div>
+    </div>
+    <section class="sidebar">
+        <input type="button" id="authorizeButton" style="display: none" value="Authorize" />
+        <button class="btn-scrape" id="btn-restore">Restore from Drive</button>
+        <div class="sidebar-input">
+            <input id="input-scrape" type="text" placeholder="Insert a valid Url...." value="https://www.fictionpress.com/s/2961893/1/Mother-of-Learning">
+            <button class="btn-scrape" id="btn-scrape">Scrape</button>
+            <button class="btn-scrape" id="btn-scrape-drive">
+                Scrape&<img class="google-drive-icon" src="images/Google_Drive_Logo.svg">
+            </button>
+        </div>
+        <div class="sidebar-list"></div>
+    </section>
+    <section class="reader">
+        <div class="home">
+            <h1>This is HOME PAGE</h1>
+            <br>
+            <p>Homepage description</p>
+        </div>
+        <div class="about">
+            This is ABOUT PAGE
+        </div>
+        <div class="offreader">
+            <div class="title" id="title">
+                . . .
+            </div>
+            <div class="description">
+                <p>Chapters: <span id="chapters-total">0</span></p>
+            </div>
+            <div class="navigation">
+                <select id="chapters-select" class="chapters" title="Chapter Navigation" name="chapter"></select>
+                <a class="btn prev disable" type="button">< Prev</a>
+                <a class="btn next" type="button">Next &gt;</a>
+            </div>
+            <div class="text" id="storyList"></div>
+        </div>
+    </section>
+    <script src="scripts/bluebird.js"></script>
+    <script src="scripts/pako.js"></script>
+    <script src="scripts/pace.js"></script>
+    <script src="scripts/globals.js"></script>
+    <script src="scripts/userInterface.js"></script>
+    <script src="scripts/gapi-auth.js"></script>
+    <!--<script type="text/javascript" src="https://apis.google.com/js/client.js"></script><!--?onload=handleClientLoad"></script>-->-->
+    <script src="scripts/Scraping.js"></script>
+    <script src="scripts/IndexedDb.js"></script>
+    <script src="scripts/main.js"></script>
+</body>
+</html>
