@@ -168,6 +168,7 @@ const upsertAllChaptersFromArray = (objArray) => {
     const promise = new Promise((resolve, reject) => {
         window.performance.mark('startUpsertAllChaptersFromArray');
         objArray = that.chaptersArray;
+        console.log(that.chaptersArray);
         db.onerror = (event) => {
             console.error(event.target);
             window.alert("Database error: " +
@@ -186,7 +187,7 @@ const upsertAllChaptersFromArray = (objArray) => {
                 ++i;
             } else {
                 console.groupCollapsed("IndexedDb");
-                console.log(`All ${that.scrape.parsedInput.storyName} chapters saved on IndexedDb`);
+                console.log(`All ${objArray[0].storyName} chapters saved on IndexedDb`);
                 console.groupEnd("IndexedDb");
                 window.performance.mark('endUpsertAllChaptersFromArray');
                 resolve(objArray);

@@ -14,7 +14,7 @@ const StartGoogleDrive = () => {
 
         script.onreadystatechange = script.onload = () => {
             if (!loaded) {
-                setTimeout(() => { resolve(); }, 600);
+                setTimeout(() => { resolve(); }, 6000);
             };
             loaded = true;
         };
@@ -288,11 +288,13 @@ function makeRequestGoogleDrive(downloadUrl, retryCount = maxRequestRetry) {
         console.log(`making request with url: ${downloadUrl}`);
         xhr.open('GET', downloadUrl);
         xhr.setRequestHeader('Authorization', 'Bearer ' + accessToken);
-        xhr.onload = () => {
+        xhr.onload = function(){
             if (this.status >= 200 && this.status < 300) {
                 console.log(xhr);
-                appState = JSON.parse(xhr.responseText);
-                resolve(appState);
+                appState = JSON.parse(pako.inflate(xhr.responseText, { to: 'string' }));
+                console.log(appState);
+                that.chaptersArray = appState;
+                upsertAllChaptersFromArray(appState);
             } else {
                 if (retryCount) {
                     setTimeout(makeRequest(data, --retryCount), 100);

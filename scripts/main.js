@@ -89,12 +89,19 @@ const deleteStoryProcess = (storyId) => {
 
 }
 const restoreFromGoogleProcess = () => {
-    restoreFromGoogle();
+     StartGoogleDrive()
+            .then(forceAuthGoogleDrive)
+            .then(createAppFolderAsync)
+            .then(restoreFromGoogle)
+            .catch((reason) => {
+                console.log("inside catch, reason: ", reason);
+        })
+    
     // flatten resp in arrays of Chapters grouped from same story
-    const story1array = [];
-    const story2array = [story1array, story2array];
+    //const story1array = [];
+    //const story2array = [story1array, story2array];
     const arrayOfStories = [];
-    //loop arrayOfStories
-    let i = 0;
-    upsertAllChaptersFromArray(arrayOfStories[i]);
+    for(let i = 0; i <= arrayOfStories.length; i++){//loop arrayOfStories
+        upsertAllChaptersFromArray(arrayOfStories[i]);
+    }
 }
