@@ -77,7 +77,15 @@ btnRestore.addEventListener("click",
         .then(reportPerformance);
     });
 const deleteStoryProcess = (storyId) => {
-    deleteStoryDb(storyId);
+    console.log("enter deleteStoryProcess",storyId);
+    globalDeleteStoryId = storyId;
+    deleteStoryDb(storyId)
+    StartGoogleDrive()
+        .then(checkAuthGoogleDrive)
+        .then(deleteStoryGd)
+        .catch((reason) => {
+                console.log("inside catch, reason: ", reason);
+        })
 
 }
 const restoreFromGoogleProcess = () => {

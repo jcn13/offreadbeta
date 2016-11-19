@@ -47,6 +47,7 @@ that.storyInfo = {
 
 };
 let Story = {};
+let globalDeleteStoryId;
 
 //HTML hooks
 const btnScrape = document.querySelector("#btn-scrape");

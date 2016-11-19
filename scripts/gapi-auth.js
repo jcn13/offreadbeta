@@ -88,7 +88,7 @@ function createAppFolderAsync(resp) {
     const promise = new Promise((resolve, reject) => {
         gapi.client.drive.files.list(
             {
-                'q': "mimeType = 'application/vnd.google-apps.folder' and title = 'OffWebReader' and trashed = false"
+                'q': "mimeType = 'application/vnd.google-apps.folder' and title = 'offread' and trashed = false"
             }).then((response) => {
                 console.log("createAppFolderAsync");//, response: ", response);
                 if (response.result.items.length === 0) {
@@ -107,7 +107,7 @@ function createAppFolderAsync(resp) {
 function createAppFolderAsyncHelper(resp) {
     const promise = new Promise((resolve, reject) => {
         const data = new Object();
-        data.title = "OffWebReader";
+        data.title = "offread";
         data.mimeType = "application/vnd.google-apps.folder";
         gapi.client.drive.files.insert({ 'resource': data }).execute((fileList) => {
             globalAppFolderGoogleId = fileList.id;
@@ -209,12 +209,22 @@ function deleteFileById(fileId) {
     return promise;
 };
 
-function deleteStoryGd(storyId) {
+function deleteStoryGd() {
+    console.log("enter deleteStoryGd", globalDeleteStoryId);
     const promise = new Promise((resolve, reject) => {
-
+        const request = gapi.client.drive.files.list(
+            {
+                'q': "mimeType = 'application/json' and title = '" + globalDeleteStoryId + "' and trashed = false"
+            });
+            request.execute((resp) => {
+                const files = resp.items;
+                console.log(resp);                
+                deleteFileById(files[0].id)
+                .then((resp)=>{resolve();});
+        });
     });
     return promise;
-}
+};
 
 function restoreFromGoogle() {
     const promise = new Promise((resolve, reject) => {

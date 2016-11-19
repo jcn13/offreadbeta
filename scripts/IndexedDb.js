@@ -26,7 +26,7 @@ function openDb() {
             const dbUpgrade = event.target.result;
             console.log(evt);
             console.log("openDb.onupgradeneeded");
-            if (evt.oldVersion < evt.newVersion) {
+            if (evt.oldVersion !== 0 && evt.oldVersion < evt.newVersion) {
                 //clearObjectStore();
                 dbUpgrade.deleteObjectStore(DB_STORE_NAME);
             }
