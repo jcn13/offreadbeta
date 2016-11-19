@@ -3,23 +3,81 @@
 /*eslint prefer-const: "error"*/
 /*eslint-env es6*/
 
-const getFirstChapter = (data) => {
+function ScrapeButtonStarter() {
+    window.performance.mark("startWholeProcess");
+    console.groupCollapsed("ScrapeButtonStarter");
+    that.scrape.length = 0;
+    that.chaptersArray.length = 0;
     const promise = new Promise((resolve, reject) => {
-        console.log("getFirstChapter beforebegin, link: ", that.scrape.chapterLinksList[0]);
-        return makeRequest(that.scrape.chapterLinksList[0])
-            .then((response) => {
-                console.log("getFirstChapter makerequest.then, response: ", response != null);
-                storyObj = {
-                    storyChapterId: that.scrape.parsedInput.storyId + ".1",
-                    storyName: that.scrape.parsedInput.storyName,
-                    totalOfChapters: that.scrape.totalOfChapters,
-                    chapterUrl: that.scrape.parsedInput.hrefEmptyChapter + "/1",
-                    storyContent: response
-                };
-                that.chaptersArray.push(storyObj);
-                delete that.scrape.chapterLinksList[0];
-                resolve(data);
-            });
+        parseUserInput(inputScrape.value, supportedSites);
+        that.scrape.yqlGetChapterLinks = yqlStringBuilder(that.scrape.parsedInput.href,
+            that.scrape.parsedInput.xpathLinks);
+        if (!that.scrape.yqlGetChapterLinks) {
+            console.log("StartScrapingAsync reject");
+            reject();
+        }
+        const title = document.querySelector("#title");
+        title.textContent = that.scrape.parsedInput.storyName;
+        console.log("StartScrapingAsync resolve");
+        console.groupEnd("ScrapeButtonStarter");
+        resolve({ method: "GET", url: that.scrape.yqlGetChapterLinks });
+    });
+    return promise;
+};
+
+const getStoryInfo = function(data) {
+    console.groupCollapsed("getStoryInfo");
+    window.performance.mark('startGetStoryInfo');
+    return new Promise((resolve, reject) => {
+        resolve(makeRequest(data));
+    });
+};
+
+const parseStoryInfo = (response) => {
+    window.performance.mark('endGetStoryInfo');
+    window.performance.mark('startParseStoryInfo');
+    const promise = new Promise((resolve, reject) => {
+        const totalOfChapters = (JSON.parse(response)).query.results.select[0].option.length;
+        if (totalOfChapters <= 0) {
+            reject();
+        }
+        that.scrape.totalOfChapters = totalOfChapters;
+        that.scrape.currentChapter = 1;
+        const storyObj = {
+            totalOfChapters: totalOfChapters,
+            data: response,
+            parsedInput: that.scrape.parsedInput,
+            currentChapter: 1,
+            idStory: that.scrape.parsedInput.storyId,
+            href: that.scrape.parsedInput.href,
+            chapterLinks: []
+        };
+        console.log("parseStoryInfo, storyObj", storyObj); //, data);
+        console.groupEnd("getStoryInfo");
+        window.performance.mark('endParseStoryInfo');
+        resolve(storyObj);
+    });
+    return promise;
+};
+
+const buildChapterPromises = () => {
+    console.groupCollapsed("getAllChapters");
+    window.performance.mark('startBuildChapterPromises');
+    const promise = new Promise((resolve, reject) => {
+        that.scrape.chapterLinksList.length = 0;
+        for (let i = 1; i <= that.scrape.totalOfChapters; i++) {
+            const yqlGetChapter = yqlStringBuilder(
+                that.scrape.parsedInput.hrefEmptyChapter + i,
+                that.scrape.parsedInput.xpathStory,
+                "xml");
+            that.scrape.chapterLinksList.push({ method: "GET", url: yqlGetChapter });
+        };
+        console.log("buildChapterPromises, that.scrape.chapterLinksList", that.scrape.chapterLinksList);
+        if (!that.scrape || !that.scrape.chapterLinksList || that.scrape.chapterLinksList.length <= 0) {
+            reject();
+        }
+        window.performance.mark('endBuildChapterPromises');
+        resolve();
     });
     return promise;
 };
@@ -34,10 +92,13 @@ const getAllChapters = (data) => {
             return makeRequest(that.scrape.chapterLinksList[i])
                 .then((response) => {
                     const storyObj = {
-                        storyChapterId: that.scrape.parsedInput.storyId + "." + (i + 1),
+                        chapterId: that.scrape.parsedInput.storyId + "." + (i + 1),
+                        storyId: that.scrape.parsedInput.storyId,
+                        chapterNumber: i+1,
                         storyName: that.scrape.parsedInput.storyName,
                         totalOfChapters: that.scrape.totalOfChapters,
                         chapterUrl: that.scrape.parsedInput.hrefEmptyChapter + `/${i + 1}`,
+                        author: "",
                         storyContent: response
                     };
                     console.log(`requests done: ${++j}/${k}`);
@@ -108,82 +169,6 @@ function parseUserInput(url, supSites) {
     return input;
 };
 
-function ScrapeButtonStarter() {
-    window.performance.mark("startWholeProcess");
-    console.groupCollapsed("ScrapeButtonStarter");
-    that.scrape.length = 0;
-    that.chaptersArray.length = 0;
-    const promise = new Promise((resolve, reject) => {
-        parseUserInput(inputScrape.value, supportedSites);
-        that.scrape.yqlGetChapterLinks = yqlStringBuilder(that.scrape.parsedInput.href,
-            that.scrape.parsedInput.xpathLinks);
-        if (!that.scrape.yqlGetChapterLinks) {
-            console.log("StartScrapingAsync reject");
-            reject();
-        }
-        const title = document.querySelector("#title");
-        title.textContent = that.scrape.parsedInput.storyName;
-        console.log("StartScrapingAsync resolve");
-        console.groupEnd("ScrapeButtonStarter");
-        resolve({ method: "GET", url: that.scrape.yqlGetChapterLinks });
-    });
-    return promise;
-};
-const getStoryInfo = function(data) {
-    console.groupCollapsed("getStoryInfo");
-    window.performance.mark('startGetStoryInfo');
-    return new Promise((resolve, reject) => {
-        resolve(makeRequest(data));
-    });
-};
-const parseStoryInfo = (response) => {
-    window.performance.mark('endGetStoryInfo');
-    window.performance.mark('startParseStoryInfo');
-    const promise = new Promise((resolve, reject) => {
-        const totalOfChapters = (JSON.parse(response)).query.results.select[0].option.length;
-        if (totalOfChapters <= 0) {
-            reject();
-        }
-        that.scrape.totalOfChapters = totalOfChapters;
-        that.scrape.currentChapter = 1;
-        const storyObj = {
-            totalOfChapters: totalOfChapters,
-            data: response,
-            parsedInput: that.scrape.parsedInput,
-            currentChapter: 1,
-            idStory: that.scrape.parsedInput.storyId,
-            href: that.scrape.parsedInput.href,
-            chapterLinks: []
-        };
-        console.log("parseStoryInfo, storyObj", storyObj); //, data);
-        console.groupEnd("getStoryInfo");
-        window.performance.mark('endParseStoryInfo');
-        resolve(storyObj);
-    });
-    return promise;
-};
-const buildChapterPromises = () => {
-    console.groupCollapsed("getAllChapters");
-    window.performance.mark('startBuildChapterPromises');
-    const promise = new Promise((resolve, reject) => {
-        that.scrape.chapterLinksList.length = 0;
-        for (let i = 1; i <= that.scrape.totalOfChapters; i++) {
-            const yqlGetChapter = yqlStringBuilder(
-                that.scrape.parsedInput.hrefEmptyChapter + i,
-                that.scrape.parsedInput.xpathStory,
-                "xml");
-            that.scrape.chapterLinksList.push({ method: "GET", url: yqlGetChapter });
-        };
-        console.log("buildChapterPromises, that.scrape.chapterLinksList", that.scrape.chapterLinksList);
-        if (!that.scrape || !that.scrape.chapterLinksList || that.scrape.chapterLinksList.length <= 0) {
-            reject();
-        }
-        window.performance.mark('endBuildChapterPromises');
-        resolve();
-    });
-    return promise;
-};
-
 function yqlStringBuilder(parsedUrl, xpath, format = "json") {
     if (!parsedUrl || !xpath) {
         console.log(`yqlStringBuilder input problem:
@@ -194,3 +179,29 @@ function yqlStringBuilder(parsedUrl, xpath, format = "json") {
     const yql = "https://query.yahooapis.com/v1/public/yql?" + "q=" + encodeURIComponent(`select * from html where url=@url and xpath='${xpath}'`) + "&url=" + encodeURIComponent(parsedUrl) + `&crossProduct=optimized&format=${format}`;
     return yql;
 };
+
+    /*** Deprecated ***/
+
+    const getFirstChapter = (data) => {
+        const promise = new Promise((resolve, reject) => {
+            console.log("getFirstChapter beforebegin, link: ", that.scrape.chapterLinksList[0]);
+            return makeRequest(that.scrape.chapterLinksList[0])
+                .then((response) => {
+                    console.log("getFirstChapter makerequest.then, response: ", response != null);
+                    storyObj = {
+                        chapterId: that.scrape.parsedInput.storyId + ".1",
+                        storyId: that.scrape.parsedInput.storyId,
+                        chapterNumber: 1,
+                        storyName: that.scrape.parsedInput.storyName,
+                        totalOfChapters: that.scrape.totalOfChapters,
+                        chapterUrl: that.scrape.parsedInput.hrefEmptyChapter + "/1",
+                        author: "",
+                        storyContent: response
+                    };
+                    that.chaptersArray.push(storyObj);
+                    delete that.scrape.chapterLinksList[0];
+                    resolve(data);
+                });
+        });
+        return promise;
+    };

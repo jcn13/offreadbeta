@@ -144,7 +144,7 @@ function updateSideBarMenu() {
                     const s = this.dataset.story;
                     console.log(data[s]);
                     Story.name = data[s].StoryName;
-                    Story.id = data[s].storyChapterId.split(".")[0];
+                    Story.id = data[s].chapterId.split(".")[0];
                     Story.chapters = data[s].totalOfChapters;
                     chaptersTotal.textContent = Story.chapters;
                     title.textContent = Story.name;

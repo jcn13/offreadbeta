@@ -8,33 +8,64 @@ function openDb() {
         console.groupCollapsed("pageStart");
         console.log("openDb ...");
         const req = indexedDB.open(DB_NAME, DB_VERSION);
-        req.onsuccess = function(evt) {
+        req.onsuccess = function (evt) {
             // Better use "this" than "req" to get the result to avoid problems with
             // garbage collection.
             // db = req.result;
             db = this.result;
-            console.log("openDb DONE");
+            console.log("openDb DONE, evt: ", evt);
             console.groupEnd();
             //fn();
             resolve(evt);
         };
-        req.onerror = function(evt)  {
+        req.onerror = function (evt) {
             console.error("openDb:", evt.target.errorCode);
             reject(evt);
         };
-        req.onupgradeneeded = function(evt) {
+        req.onupgradeneeded = function (evt) {
+            const dbUpgrade = event.target.result;
+            console.log(evt);
             console.log("openDb.onupgradeneeded");
+            if (evt.oldVersion < evt.newVersion) {
+                //clearObjectStore();
+                dbUpgrade.deleteObjectStore(DB_STORE_NAME);
+            }
+            //if (evt.oldVersion === 0) {
             const store = evt.currentTarget.result.createObjectStore(
                 DB_STORE_NAME,
-                { keyPath: "storyChapterId", autoIncrement: true });
+                { keyPath: "chapterId", autoIncrement: true });
 
-            store.createIndex("storyChapterId", "storyChapterId", { unique: true });
-            store.createIndex("AuthorName", "AuthorName", { unique: false });
+            store.createIndex("chapterId", "chapterId", { unique: true });
+            store.createIndex("storyId", "storyId", { unique: false });
+            //}
+
         };
     });
     return promise;
-}
+};
+function testDb() {
+    console.log("AAAA");
+    const store = getObjectStore(DB_STORE_NAME, "readwrite");
+    console.log("index chapterId: ", store.index("chapterId"));
+    console.log("index storyId: ", store.index("storyId"));
+    const chapterIndex = store.index("chapterId");
+    const storyIndex = store.index("storyId");
+    const chapterRequest = chapterIndex.get("2961893");
+    const storyRequest = storyIndex.get("2961893");
 
+    chapterRequest.onsuccess = (event) => {
+        console.log("chapterRequest event: ", event);
+    };
+    storyRequest.onsuccess = (event) => {
+        console.log("storyRequest event: ", event);
+    };
+    chapterRequest.onerror = (event) => {
+        console.log("chapterRequest: ", event);
+    };
+    storyRequest.onerror = (event) => {
+        console.log("storyRequest: ", event);
+    };
+}
 /**
 * @param {string} storeName
 * @param {string} mode either "readonly" or "readwrite"
@@ -56,12 +87,12 @@ function clearObjectStore() {
         };
     });
     return promise;
-}
+};
 
 //TODO: rever de callback para promise
-function getChapter(storyChapterId) {
+function getChapter(chapterId) {
     const promise = new Promise((resolve, reject) => {
-        const request = db.transaction(DB_STORE_NAME).objectStore(DB_STORE_NAME).get(storyChapterId);
+        const request = db.transaction(DB_STORE_NAME).objectStore(DB_STORE_NAME).get(chapterId);
         request.onerror = (event) => {
             console.log("GetChapterError: ", request.error);
             reject(event);
@@ -70,14 +101,14 @@ function getChapter(storyChapterId) {
             if (request.result) {
                 const value = event.target.result;
                 that.tempChapter = value;
-                console.log(value.Content.slice(0, 300));
-                storyList.innerHTML = `<div class="chapterBox">${value.Content}</div>`;
+                console.log(value.storyContent.slice(0, 300));
+                storyList.innerHTML = `<div class="chapterBox">${value.storyContent}</div>`;
             }
             resolve(event.target.result);
         };
     });
     return promise;
-}
+};
 
 //TODO: rever de callback para promise
 function getListOfStoriesInDb() {
@@ -108,7 +139,7 @@ function getListOfStoriesInDb() {
         };
     });
     return promise;
-}
+};
 
 const upsertChapter = (obj) => {
     const promise = new Promise((resolve, reject) => {
@@ -122,7 +153,7 @@ const upsertChapter = (obj) => {
             throw e;
         }
         req.onsuccess = (evt) => {
-            console.log(`Chapter ${obj.storyChapterId.split('.')[1]} from story ${obj.storyName} saved on IndexedDb`);
+            console.log(`Chapter ${obj.chapterId.split('.')[1]} from story ${obj.storyName} saved on IndexedDb`);
             resolve();
         };
         req.onerror = () => {
@@ -131,17 +162,22 @@ const upsertChapter = (obj) => {
         };
     });
     return promise;
-}
+};
+
 const upsertAllChaptersFromArray = (objArray) => {
     const promise = new Promise((resolve, reject) => {
         window.performance.mark('startUpsertAllChaptersFromArray');
         objArray = that.chaptersArray;
         db.onerror = (event) => {
             console.error(event.target);
-            window.alert("Database error: " + (event.target.wePutrrorMessage || event.target.error.name || event.target.error || event.target.errorCode));
+            window.alert("Database error: " +
+            (event.target.wePutrrorMessage ||
+                event.target.error.name ||
+                event.target.error ||
+                event.target.errorCode));
         };
         const store = getObjectStore(DB_STORE_NAME, "readwrite");
-        let i =0;
+        let i = 0;
         putNext();
 
         function putNext() {
@@ -158,22 +194,22 @@ const upsertAllChaptersFromArray = (objArray) => {
         }
     });
     return promise;
-}
+};
 
 /**
-* @param {string} storyChapterId
+* @param {string} chapterId
 */
-function deleteChapter(storyChapterId) {
+function deleteChapter(chapterId) {
     const promise = new Promise((resolve, reject) => {
         console.log("deletePublication:", arguments);
         const store = getObjectStore(DB_STORE_NAME, "readwrite");
-        const req = store.index("storyChapterId");
-        req.get(storyChapterId).onsuccess = (evt) => {
+        const req = store.index("chapterId");
+        req.get(chapterId).onsuccess = (evt) => {
             if (typeof evt.target.result == "undefined") {
                 console.error("No matching record found");
                 return;
             }
-            deleteMethod(evt.target.result.storyChapterId, store)
+            deleteMethod(evt.target.result.chapterId, store)
                 .then(() => { resolve() });
         };
         req.onerror = (evt) => {
@@ -182,8 +218,50 @@ function deleteChapter(storyChapterId) {
         };
     });
     return promise;
-}
+};
 
+const deleteStoryDb = (storyId) => {
+    const promise = new Promise((resolve, reject) => {
+        window.performance.mark('startDeleteStory');
+        db.onerror = (event) => {
+            console.error(event.target);
+            window.alert("Database error: " +
+            (event.target.wePutrrorMessage ||
+                event.target.error.name ||
+                event.target.error ||
+                event.target.errorCode));
+        };
+        let store;
+        const storeStoryIdKeyPath = getObjectStore(DB_STORE_NAME, "readwrite").index("storyId");
+        let chapterKeys = 0;
+        storeStoryIdKeyPath.getAllKeys(storyId).onsuccess = (evt) => {
+            if (typeof evt.target.result == "undefined") {
+                console.error("No matching record found");
+                reject();
+            }
+            console.log(evt);
+            chapterKeys = evt.target.result;
+            store = getObjectStore(DB_STORE_NAME, "readwrite");
+            deleteNext();
+        }
+        let i = 0;
+
+        function deleteNext(evt) {
+            console.log("deleteNext evt: ", evt);
+            if (i < chapterKeys.length) {
+                store.delete(chapterKeys[i]).onsuccess = deleteNext;
+                ++i;
+            } else {
+                console.groupCollapsed("IndexedDb delete");
+                console.log(`Story with storyId ${storyId} deleted from IndexedDb`);
+                console.groupEnd("IndexedDb delete");
+                window.performance.mark('endDeleteStory');
+                resolve();
+            }
+        }
+    });
+    return promise;
+};
 /**
 * @param {number} key
 * @param {IDBObjectStore=} store
@@ -223,5 +301,5 @@ function deleteMethod(key, store) {
         };
     });
     return promise;
-}
+};
 

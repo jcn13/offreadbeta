@@ -31,10 +31,13 @@ that.scrape = {
 that.tempChapter = {};
 that.sidebarMenu = {};
 that.chapterObject = {
-    storyChapterId: null,
+    chapterId: null,
+    storyId: null,
+    chapterNumber: null,
     storyName: null,
     totalOfChapters: null,
     chapterUrl: null,
+    author: null,
     storyContent: null
 };
 that.retryCount = [];
@@ -61,11 +64,9 @@ const aboutbtn = document.querySelector(".about-btn");
 
 //IndexedDb
 const DB_NAME = "offread";
-const DB_VERSION = 6; // Use a long long for this value (don't use a float)
+const DB_VERSION = 8;
 const DB_STORE_NAME = "stories";
 let db;
-// Used to keep track of which view is displayed to avoid uselessly reloading it
-let current_view_pub_key;
 
 //Google Auth
 const CLIENT_ID = "698825936465-j1cs44897v5flnfrf7fpppnukp6okpq7.apps.googleusercontent.com";
@@ -101,6 +102,35 @@ const supportedSites = new Map([
     }]
 ]);
 
+const reportPerformance = function() {
+    const promise = new Promise((resolve, reject) => {
+        window.performance.mark("endWholeProcess");
+        console.groupCollapsed("Performance report...");
+        const markItems = window.performance.getEntriesByType('mark');
+        const markConfig = ["DeleteStory", "WholeProcess", "GetListOfStoriesInDb", "UpdateSideBarMenu", "UploadStory", "PakoDeflateStory", "StartGoogleDriveToCreateAppFolder", "UpsertAllChaptersFromArray", "GetAllChapters", "BuildChapterPromises", "ParseStoryInfo", "GetStoryInfo"];
+        console.log("markItems: ", markItems);
+        let sum = 0;
+        for (let j = markConfig.length - 1; j >= 0; j--) {
+            for (let i = markItems.length - 1; i >= 0; i--) {
+                if (markItems[i].name === `start${markConfig[j]}`) {
+                    window.performance.measure(markConfig[j], `start${markConfig[j]}`, `end${markConfig[j]}`);
+                    console.log(`${markConfig[j]} (ms): `,
+                        window.performance.getEntriesByName(markConfig[j])[0].duration);
+                    sum += window.performance.getEntriesByName(markConfig[j])[0].duration;
+                }
+            }
+        }
+        if (window.performance.getEntriesByName("WholeProcess")) {
+            console.log("Sum of parts = ", sum - window.performance.getEntriesByName("WholeProcess")[0].duration);
+        }
+        console.groupEnd("Performance report...");
+        window.performance.clearMarks();
+        window.performance.clearMeasures();
+        resolve();
+    });
+    return promise;
+};
+
 function makeRequest(data, retryCount = maxRequestRetry) {
     return new Promise((resolve, reject) => {
         if (!data || !data.url) reject();
@@ -135,31 +165,4 @@ function makeRequest(data, retryCount = maxRequestRetry) {
         };
         xhr.send();
     });
-};
-
-const reportPerformance = function() {
-    const promise = new Promise((resolve, reject) => {
-        window.performance.mark("endWholeProcess");
-        console.groupCollapsed("Performance report...");
-        const markItems = window.performance.getEntriesByType('mark');
-        const markConfig = ["WholeProcess", "GetListOfStoriesInDb", "UpdateSideBarMenu", "UploadStory", "PakoDeflateStory", "StartGoogleDriveToCreateAppFolder", "UpsertAllChaptersFromArray", "GetAllChapters", "BuildChapterPromises", "ParseStoryInfo", "GetStoryInfo"];
-        console.log("markItems: ", markItems);
-        let sum = 0;
-        for (let j = markConfig.length - 1; j >= 0; j--) {
-            for (let i = markItems.length - 1; i >= 0; i--) {
-                if (markItems[i].name === `start${markConfig[j]}`) {
-                    window.performance.measure(markConfig[j], `start${markConfig[j]}`, `end${markConfig[j]}`);
-                    console.log(`${markConfig[j]} (ms): `,
-                        window.performance.getEntriesByName(markConfig[j])[0].duration);
-                    sum += window.performance.getEntriesByName(markConfig[j])[0].duration;
-                }
-            }
-        }
-        console.log("Sum of parts = ", sum - window.performance.getEntriesByName("WholeProcess")[0].duration);
-        console.groupEnd("Performance report...");
-        window.performance.clearMarks();
-        window.performance.clearMeasures();
-        resolve();
-    });
-    return promise;
 };

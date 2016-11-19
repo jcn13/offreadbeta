@@ -35,6 +35,7 @@ btnScrape.addEventListener("click",
             .then(parseStoryInfo)
             .then(buildChapterPromises)
             .then(getAllChapters)
+            .then(upsertAllChaptersFromArray)
             .then(getListOfStoriesInDb) //TODO: only disable loader gif? still need to create/enable gif
             .then(updateSideBarMenu) //TODO: not necessary to list and update again
             //.then(populateDropDownMenu) 
@@ -75,3 +76,17 @@ btnRestore.addEventListener("click",
             })
         .then(reportPerformance);
     });
+const deleteStoryProcess = (storyId) => {
+    deleteStoryDb(storyId);
+
+}
+const restoreFromGoogleProcess = () => {
+    restoreFromGoogle();
+    // flatten resp in arrays of Chapters grouped from same story
+    const story1array = [];
+    const story2array = [story1array, story2array];
+    const arrayOfStories = [];
+    //loop arrayOfStories
+    let i = 0;
+    upsertAllChaptersFromArray(arrayOfStories[i]);
+}
